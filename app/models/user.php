@@ -2,12 +2,17 @@
 namespace Models;
 
 class User {
-
-    public int $id;
-    public string $username;
+    enum UserType {
+        case Student;
+        case Tutor;
+        case Administrator;
+    }
+    
+    public int $userId;
+    public string $firstName;
+    public string $lastName;
     public string $password;
-    public string $email;
-
+    public string $emailAddress;
+    public UserType $userType;
 }
-
 ?>
