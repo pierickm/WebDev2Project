@@ -1,6 +1,6 @@
 <?php
 namespace Services;
-
+use Models\User;
 use Repositories\UserRepository;
 
 class UserService {
@@ -12,8 +12,32 @@ class UserService {
         $this->repository = new UserRepository();
     }
 
-    public function checkUsernamePassword($username, $password) {
-        return $this->repository->checkUsernamePassword($username, $password);
+    public function checkLogin($password, $emailAddress) {
+        return $this->repository->checkLogin($password, $emailAddress);
+    }
+
+    public function hashPassword($password) {
+        return $this->repository->hashPassword($password);
+    }
+
+    public function register(User $user) {
+        return $this->repository->register($user);
+    }
+
+    public function update(User $user) {
+        return $this->repository->update($user);
+    }
+
+    public function getAll($limit, $offset) {
+        return $this->repository->getAll($limit, $offset);
+    }
+
+    public function getOne($userId) {
+        return $this->repositroy->getOne($userId);
+    }
+
+    public function delete($userId) {
+        return $this->repository->delete($userId);
     }
 }
 
