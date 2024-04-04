@@ -17,10 +17,10 @@ class Controller
 
     function verifyToken()
     {
-        if(!isset($_SERVER['HTTP_AUTHORIZATION']) {
+        if(!isset($_SERVER['HTTP_AUTHORIZATION'])) {
             $this->respondWithError(401, "No token was given.");
             return null;
-        })
+        }
 
         //get token 
         $authenticationHeader = $_SERVER['HTTP_AUTHORIZATION'];
@@ -35,7 +35,7 @@ class Controller
         $jwt = $subParts[1];
 
         try {
-            $decodedToken = JWT::decode($jwt, new Key($his->jwtSecret, 'HS256'));
+            $decodedToken = JWT::decode($jwt, new Key($this->secretJwt, 'HS256'));
             return $decodedToken;
         } catch(Exception $e) {
             $this->respondWithError(401, $e->getMessage());
@@ -66,6 +66,7 @@ class Controller
     {
         $json = file_get_contents('php://input');
         $data = json_decode($json);
+
 
         $object = new $className();
         foreach ($data as $key => $value) {

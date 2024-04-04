@@ -13,7 +13,7 @@ class UserRepository extends Repository
     {
         try {
             // retrieve the user with the given username
-            $stmt = $this->connection->prepare("SELECT userId, password, emailAddress FROM Users WHERE emailAddress = :emailAddress");
+            $stmt = $this->connection->prepare("SELECT * FROM Users WHERE emailAddress = :emailAddress");
             $stmt->bindParam(':emailAddress', $emailAddress);
             $stmt->execute();
 
@@ -28,7 +28,6 @@ class UserRepository extends Repository
 
             // do not pass the password hash to the caller
             $user->password = "";
-
             return $user;
         } catch (PDOException $e) {
             return $e;
@@ -106,7 +105,7 @@ class UserRepository extends Repository
 
     function update(User $user) {
         try{
-            $stmt= $this->connection->prepare->"UPDATE Users SET emailAddress = :emailAddress, firstName = :firstName, lastName = :lastName, userType = :userType WHERE userId = :userId";
+            $stmt= $this->connection->prepare("UPDATE Users SET emailAddress = :emailAddress, firstName = :firstName, lastName = :lastName, userType = :userType WHERE userId = :userId");
             $stmt->bindParam(':emailAddress', $user->emailAddress);
             $stmt->bindParam(':firstName', $user->firstName);
             $stmt->bindParam(':lastName', $user->lastName);

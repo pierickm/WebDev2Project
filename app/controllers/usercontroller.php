@@ -53,7 +53,7 @@ class UserController extends Controller
     public function update($userId) {
         $decodedJwt = $this->verifyToken();
         if(!($decodedJwt->data->userType == "Administrator" || $decodedJwt->data->id == $userId)) {
-            $this->respondWithError(403, "Forbidden - Since you are not an Administrator, you can only update your account.")
+            $this->respondWithError(403, "Forbidden - Since you are not an Administrator, you can only update your account.");
             return;
         }
 
@@ -93,7 +93,7 @@ class UserController extends Controller
         $decodedJwt = $this->verifyToken();
         
         if($decodedJwt->data->userId != $userId || $decodedJwt->data->userType !== "Administrator"){
-            $this->respondWithError(403, "Forbidden - Since you are not an Administrator, you can only view your own account.")
+            $this->respondWithError(403, "Forbidden - Since you are not an Administrator, you can only view your own account.");
             return;
         }
 
@@ -102,7 +102,7 @@ class UserController extends Controller
             if($user) {
                 $this->respond($user);
             } else {
-                $this->respndWithError(404, "User not found");
+                $this->respondWithError(404, "User not found");
             }
         } catch (Exception $e) {
             $this->respondWithError(500, $e->getMessage());
@@ -113,7 +113,7 @@ class UserController extends Controller
         $decodedJwt = $this->verifyToken();
         
         if(!($decodedJwt->data->userType == "Administrator" || $decodedJwt->data->id == $userId)) {
-            $this->respondWithError(403, "Forbidden - Since you are not an Administrator, you can only delete your account.")
+            $this->respondWithError(403, "Forbidden - Since you are not an Administrator, you can only delete your account.");
             return;
         }
 
@@ -128,30 +128,29 @@ class UserController extends Controller
             $this->respondWithError(500, $e->getMessage());
         }
 
-        $this->respond(['sucess'] => true);
+        $this->respond(['success' => true]);
     }
 
     public function generateJWT($user) {
         $issuedAt = time();
         $expirationSpan = $issuedAt + (30 * 60);
         
-        $jwt = JWT::encode([
+        $token = JWT::encode([
             "iss" => 'localhost.com',
             "aud" => 'localhost.com',
             "iat" => $issuedAt,
             "nbf" => $issuedAt,
             "exp" => $expirationSpan,
             "data" => [
-                "id" => $user->userId,
-                "email" => $user->emailAddress,
+                "userId" => $user->userId,
+                "emailAddress" => $user->emailAddress,
                 "userType" => $user->userType
             ]
         ], $this->secretJwt, 'HS256');
 
         return array(
             "message" => "Successful login.",
-            "jwt" => $jwt,
-            "emailAddress" => $user->emailAddress,
+            "token" => $token,
             "expireAt" => $expirationSpan
         );
     }
