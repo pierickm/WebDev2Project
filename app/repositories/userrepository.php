@@ -95,7 +95,8 @@ class UserRepository extends Repository
             $stmt = $this->connection->prepare("SELECT * FROM Users WHERE userId = :userId");
             $stmt->bindParam(':userId', $insertedId);
             $stmt->execute();
-            $insertedUser = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->setFetchMode(PDO::FETCH_CLASS, 'Models\User');
+            $insertedUser = $stmt->fetch();
             $insertedUser->password = "";
         return $insertedUser;
         } catch (PDOException $e) {

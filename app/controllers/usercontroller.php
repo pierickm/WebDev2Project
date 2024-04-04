@@ -40,8 +40,8 @@ class UserController extends Controller
     public function register() {
         try{
             $postedUser = $this->createObjectFromPostedJson("Models\\User");
-            $postedUser->password = $this->service->hashPassword($user->password);
-            $user = $this->service->register($user);
+            $postedUser->password = $this->service->hashPassword($postedUser->password);
+            $user = $this->service->register($postedUser);
         } catch(Exception $e) {
             $this->respondWithError(500, $e->getMessage());
             return;
