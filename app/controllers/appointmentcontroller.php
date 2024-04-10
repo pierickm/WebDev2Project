@@ -34,13 +34,12 @@ class AppointmentController extends Controller
             }
             
             $userId = $decodedHeader->data->userId;
-            $appointments = $this->service->getAll($userId, $offset, $limit);
+            $appointments = $this->service->getAll($offset, $limit, $userId);
     
             $this->respond($appointments);
         } catch (Exception $e) {
             $this->respondWithError(500, $e->getMessage());
         }
-       
     }
 
     public function getOne($appointmentId)
@@ -112,7 +111,7 @@ class AppointmentController extends Controller
             $this->respondWithError(500, $e->getMessage());
         }
 
-        $this->respond($product);
+        $this->respond($appointment);
     }
 
     public function delete($appointmentId)

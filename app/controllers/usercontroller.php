@@ -52,13 +52,12 @@ class UserController extends Controller
 
     public function update($userId) {
         $decodedJwt = $this->verifyToken();
-        if(!($decodedJwt->data->userType == "Administrator" || $decodedJwt->data->id == $userId)) {
-            $this->respondWithError(403, "Forbidden - Since you are not an Administrator, you can only update your account.");
-            return;
-        }
-
         try {
             $user = $this->createObjectFromPostedJson("Models\\User");
+            if(!$decodedJwt->data->userType == "Administrator" && !$decodedJwt->data->userId == $userId) {
+                $this->respondWithError(403, "Forbidden - Since you are not an Administrator, you can only update your account.");
+                return;
+            }
             $user->userId = $userId;
             $updatedUser = $this->service->update($user);
             $this->respond($updatedUser);
@@ -91,8 +90,7 @@ class UserController extends Controller
 
     public function getOne($userId) {
         $decodedJwt = $this->verifyToken();
-        
-        if($decodedJwt->data->userId != $userId || $decodedJwt->data->userType !== "Administrator"){
+        if($decodedJwt->data->userId != $userId && $decodedJwt->data->userType !== "Administrator"){
             $this->respondWithError(403, "Forbidden - Since you are not an Administrator, you can only view your own account.");
             return;
         }

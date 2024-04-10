@@ -10,48 +10,49 @@ use Repositories\Repository;
 
 class AppointmentRepository extends Repository
 {
-    function getAll($offset, $limit, $userId = null)
-    {
+    function getAll($offset, $limit, $userId = null) {
         try {
+            $query = "
+                SELECT 
+                    a.*,
+                    student.firstName AS studentFirstName, 
+                    student.lastName AS studentLastName, 
+                    tutorUser.firstName AS tutorFirstName, 
+                    tutorUser.lastName AS tutorLastName,
+                    tutor.specialization AS topics
+                FROM 
+                    Appointments a
+                LEFT JOIN 
+                    Users student ON a.studentId = student.userId
+                LEFT JOIN 
+                    Tutors tutor ON a.tutorId = tutor.tutorId
+                LEFT JOIN
+                    Users tutorUser ON tutor.userId = tutorUser.userId
+            ";
+            
+            // Add condition for user-specific appointments
             if ($userId !== null) {
-                $stmt = $this->connection->prepare("
-                    SELECT 
-                        a.*, 
-                        u.*, 
-                        t.* 
-                    FROM 
-                        Appointments a
-                    LEFT JOIN 
-                        Userss s ON a.studentId = u.userId
-                    LEFT JOIN 
-                        Tutors t ON a.tutorId = t.tutorId
-                    WHERE a.studentId = :userId OR a.tutorId = :userId
-                    LIMIT :limit OFFSET :offset
-                ");
-                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-            } else {
-                $stmt = $this->connection->prepare("
-                    SELECT 
-                        a.*, 
-                        u.*, 
-                        t.* 
-                    FROM 
-                        Appointments a
-                    LEFT JOIN 
-                        Users s ON a.studentId = u.userId
-                    LEFT JOIN 
-                        Tutors t ON a.tutorId = t.tutorId
-                    LIMIT :limit OFFSET :offset
-                ");
+                $query .= " WHERE a.studentId = :userId";
             }
+            
+            $query .= " LIMIT :limit OFFSET :offset";
+            
+            $stmt = $this->connection->prepare($query);
+            
+            if ($userId !== null) {
+                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            }
+            
             $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+            
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new PDOException($e->getMessage());
         }
     }
+    
 
     function getOne($id)
     {

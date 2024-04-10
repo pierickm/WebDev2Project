@@ -11,7 +11,7 @@ class TutorRepository extends Repository
     function getAll($offset = NULL, $limit = NULL)
     {
         try {
-            $query = "SELECT T.*, U.firstName, U.lastName FROM Tutors T 
+            $query = "SELECT T.*, U.firstName, U.lastName, U.profilePhoto FROM Tutors T 
                         INNER JOIN Users U ON T.userId = U.userId";
 
             if (isset($limit) && isset($offset)) {

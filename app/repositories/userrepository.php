@@ -60,7 +60,7 @@ class UserRepository extends Repository
 
     function getOne($userId) {
         try{
-            $stmt = $this->connection->prepare("SELECT userId, emailAddress, firstName, lastName, userType FROM Users WHERE userId = :userId");
+            $stmt = $this->connection->prepare("SELECT userId, emailAddress, firstName, lastName, userType, profilePhoto FROM Users WHERE userId = :userId");
             $stmt->bindParam(':userId', $userId);
             $stmt->execute();
             return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -137,7 +137,7 @@ class UserRepository extends Repository
             $stmt->bindParam(':userId', $user->userId);
 
             $stmt->execute();
-            return $stmt->rowCount();
+            return $this->getOne($user->userId);
         } catch (PDOException $e) {
             throw new PDOException($e->getMessage());
         }

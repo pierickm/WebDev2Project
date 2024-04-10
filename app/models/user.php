@@ -12,5 +12,7 @@ class User {
     public string $password;
     public string $emailAddress;
     public string $userType;
+    public string $profilePhoto;
+
 }
 ?>
