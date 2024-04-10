@@ -12,12 +12,12 @@ class AppointmentService {
         $this->repository = new AppointmentRepository();
     }
 
-    public function getAll($offset, $limit) {
-        return $this->repository->getAll($offset, $limit);
-    }
-
-    public function getAll($userId, $offset, $limit) {
-        return $this->repository->getAll($userId, $offset, $limit);
+    public function getAll($userId = null, $offset = 0, $limit = 10) {
+        if ($userId !== null) {
+            return $this->repository->getAll($userId, $offset, $limit);
+        } else {
+            return $this->repository->getAll($offset, $limit);
+        }
     }
     
     public function getOne($id) {

@@ -33,7 +33,7 @@ class UserService {
     }
 
     public function getOne($userId) {
-        return $this->repositroy->getOne($userId);
+        return $this->repository->getOne($userId);
     }
 
     public function delete($userId) {

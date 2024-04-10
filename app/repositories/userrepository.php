@@ -4,6 +4,7 @@ namespace Repositories;
 
 use PDO;
 use PDOException;
+use Exception;
 use Repositories\Repository;
 use Models\User;
 
@@ -30,7 +31,7 @@ class UserRepository extends Repository
             $user->password = "";
             return $user;
         } catch (PDOException $e) {
-            return $e;
+            throw new PDOException($e->getMessage());
         }
     }
 
@@ -53,7 +54,7 @@ class UserRepository extends Repository
             $stmt->execute();
             return true;
         } catch( PDOException $e){
-            return $e;
+            throw new PDOException($e->getMessage());
         }
     }
 
@@ -64,7 +65,7 @@ class UserRepository extends Repository
             $stmt->execute();
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            return $e;
+            throw new PDOException($e->getMessage());
         }
     }
 
@@ -77,30 +78,52 @@ class UserRepository extends Repository
             $stmt->execute();
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            return $e;
+            throw new PDOException($e->getMessage());
         }
     }
 
+    function checkExistingUser(User $user) {
+        try{
+            $stmt = $this->connection->prepare("SELECT COUNT(*) FROM Users WHERE emailAddress = :emailAddress");
+            $stmt->bindParam(":emailAddress", $user->emailAddress);
+            $stmt->execute();
+
+            if($stmt->fetchColumn() > 0){
+                return true;
+            }
+            return false;
+        } catch (PDOException $e) {
+            throw new PDOException($e->getMessage());
+        }
+    }
     function register(User $user) {
         try {
-            $stmt = $this->connection->prepare("INSERT INTO Users (emailAddress, firstName, lastName, password, userType) VALUES (:emailAddress, :firstName, :lastName, :password, :userType)");
-            $stmt->bindParam(':emailAddress', $user->emailAddress);
-            $stmt->bindParam(':firstName', $user->firstName);
-            $stmt->bindParam(':lastName', $user->lastName);
-            $stmt->bindParam(':password', $user->password);
-            $stmt->bindParam(':userType', $user->userType);
-            $stmt->execute();
-    
-            $insertedId = $this->connection->lastInsertId();
-            $stmt = $this->connection->prepare("SELECT * FROM Users WHERE userId = :userId");
-            $stmt->bindParam(':userId', $insertedId);
-            $stmt->execute();
-            $stmt->setFetchMode(PDO::FETCH_CLASS, 'Models\User');
-            $insertedUser = $stmt->fetch();
-            $insertedUser->password = "";
-        return $insertedUser;
+            $emailInUse = $this->checkExistingUser($user);
+            if(!$emailInUse){
+                $stmt = $this->connection->prepare("INSERT INTO Users (emailAddress, firstName, lastName, password, userType) VALUES (:emailAddress, :firstName, :lastName, :password, :userType)");
+                $stmt->bindParam(':emailAddress', $user->emailAddress);
+                $stmt->bindParam(':firstName', $user->firstName);
+                $stmt->bindParam(':lastName', $user->lastName);
+                $stmt->bindParam(':password', $user->password);
+                $stmt->bindParam(':userType', $user->userType);
+                $stmt->execute();
+        
+                $insertedId = $this->connection->lastInsertId();
+                $stmt = $this->connection->prepare("SELECT * FROM Users WHERE userId = :userId");
+                $stmt->bindParam(':userId', $insertedId);
+                $stmt->execute();
+                $stmt->setFetchMode(PDO::FETCH_CLASS, 'Models\User');
+                $insertedUser = $stmt->fetch();
+                $insertedUser->password = "";
+                return $insertedUser;
+            } else{
+                throw new Exception("This email is already used by another account.");
+            }
+           
         } catch (PDOException $e) {
-            return $e;
+            throw new PDOException("Database error: " . $e->getMessage());
+        } catch (Exception $e) {
+            throw new Exception("Error: " . $e->getMessage());
         }
     }
 
@@ -116,7 +139,7 @@ class UserRepository extends Repository
             $stmt->execute();
             return $stmt->rowCount();
         } catch (PDOException $e) {
-            return $e;
+            throw new PDOException($e->getMessage());
         }
     }
 }

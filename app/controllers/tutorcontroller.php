@@ -27,7 +27,7 @@ class TutorController extends Controller
             $limit = isset($_GET['limit']) ? (int)$_GET['limit'] :20;
             $offset = isset($_GET['offset']) ? (int)$_GET['offset'] :0;
 
-            $tutors = $this->service->getAll($limit, $offset);
+            $tutors = $this->service->getAll($offset, $limit);
             $this->respond($tutors);
         } catch (Exception $e) {
             $this->respondWithError(500, $e->getMessage());
@@ -47,7 +47,7 @@ class TutorController extends Controller
             if($tutor) {
                 $this->respond($tutor);
             } else {
-                $this->respndWithError(404, "Tutor not found");
+                $this->respondWithError(404, "Tutor not found");
             }
         } catch (Exception $e) {
             $this->respondWithError(500, $e->getMessage());
@@ -120,14 +120,23 @@ class TutorController extends Controller
         $this->respond(true);
     }
 
-    public function getAvailableSlotsForTutor($tutorId, $appointmentDate)
+    public function getAvailableSlotsForTutor()
     {
         try {
             $decodedHeader = $this->verifyToken();
             if(!$decodedHeader){
                 return;
             }
-            $availableSlots = $this->service->getAvailableSlotsForTutor($tutorId, $appointmentDate);
+            
+            $tutorId = isset($_GET['tutorId']) ? $_GET['tutorId'] : null;
+            $appointmentDate = isset($_GET['appointmentDate']) ? $_GET['appointmentDate'] : null;
+    
+            if (!$tutorId || !$appointmentDate) {
+                $this->respondWithError(400, "Both tutorId and appointmentDate are required");
+                return;
+            }
+                $availableSlots = $this->service->getAvailableSlotsForTutor($tutorId, $appointmentDate);
+                  
 
             if (!$availableSlots) {
                 $this->respondWithError(404, "No available slots found");

@@ -61,7 +61,7 @@ class UserController extends Controller
             $user = $this->createObjectFromPostedJson("Models\\User");
             $user->userId = $userId;
             $updatedUser = $this->service->update($user);
-            $this->respond($user);
+            $this->respond($updatedUser);
         } catch(Exception $e) {
             $this->respondWithError(500, $e->getMessage());
         }

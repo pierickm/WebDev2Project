@@ -3,7 +3,7 @@
 namespace Controllers;
 
 use Exception;
-use ServicesAppointmentService;
+use Services\AppointmentService;
 
 class AppointmentController extends Controller
 {
@@ -88,7 +88,7 @@ class AppointmentController extends Controller
                 return $this->respondWithError(400, "Selected appointment time is not available.");
             }
             
-            $appointment = $this->service->insert($appointment);
+            $appointment = $this->service->create($appointment);
 
             $this->respond($appointment);
         } catch (Exception $e) {

@@ -11,10 +11,13 @@ class TutorRepository extends Repository
     function getAll($offset = NULL, $limit = NULL)
     {
         try {
-            $query = "SELECT * FROM Tutors";
+            $query = "SELECT T.*, U.firstName, U.lastName FROM Tutors T 
+                        INNER JOIN Users U ON T.userId = U.userId";
+
             if (isset($limit) && isset($offset)) {
                 $query .= " LIMIT :limit OFFSET :offset ";
             }
+            
             $stmt = $this->connection->prepare($query);
             if (isset($limit) && isset($offset)) {
                 $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
@@ -22,20 +25,20 @@ class TutorRepository extends Repository
             }
             $stmt->execute();
 
-            $stmt->setFetchMode(PDO::FETCH_CLASS, 'Models\Tutor');
-            $tutors = $stmt->fetchAll();
+            $tutors = $stmt->fetchAll(PDO::FETCH_CLASS, 'Models\Tutor');
 
             return $tutors;
         } catch (PDOException $e) {
-            echo $e;
+            throw new PDOException($e->getMessage());
         }
     }
 
     function getOne($id)
     {
         try {
-            $stmt = $this->connection->prepare("SELECT * FROM Tutors WHERE tutorId = :id");
-            $stmt->bindParam(':id', $id);
+            $stmt = $this->connection->prepare("SELECT T.*, U.firstName, U.lastName FROM Tutors T 
+                        INNER JOIN Users U ON T.userId = U.userId WHERE T.tutorId = :tutorId");
+            $stmt->bindParam(':tutorId', $id);
             $stmt->execute();
 
             $stmt->setFetchMode(PDO::FETCH_CLASS, 'Models\Tutor');
@@ -43,7 +46,7 @@ class TutorRepository extends Repository
 
             return $tutor;
         } catch (PDOException $e) {
-            echo $e;
+            throw new PDOException($e->getMessage());
         }
     }
 
@@ -61,7 +64,7 @@ class TutorRepository extends Repository
 
             return $tutor;
         } catch (PDOException $e) {
-            echo $e;
+            throw new PDOException($e->getMessage());
         }
     }
 
@@ -78,7 +81,7 @@ class TutorRepository extends Repository
 
             return $tutor;
         } catch (PDOException $e) {
-            echo $e;
+            throw new PDOException($e->getMessage());
         }
     }
 
@@ -88,11 +91,10 @@ class TutorRepository extends Repository
             $stmt = $this->connection->prepare("DELETE FROM Tutors WHERE tutorId = :tutorId");
             $stmt->bindParam(':tutorId', $tutorId);
             $stmt->execute();
-            return;
+            return true;
         } catch (PDOException $e) {
-            echo $e;
+            throw new PDOException($e->getMessage());
         }
-        return true;
     }
 
     public function getAvailableSlotsForTutor($tutorId, $appointmentDate)
@@ -121,7 +123,12 @@ class TutorRepository extends Repository
             $stmt->execute();
 
             $existingAppointments = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            // Format existing appointments to "H:i"
+            $existingAppointments = array_map(function($time) {
+                return substr($time, 0, 5); // Converts "HH:MM:SS" to "HH:MM"
+            }, $existingAppointments);
 
+        
             $availableSlots = [];
             $currentTime = strtotime($startTime);
             while ($currentTime < strtotime($endTime)) {
@@ -134,7 +141,7 @@ class TutorRepository extends Repository
 
             return $availableSlots;
         } catch (PDOException $e) {
-            return $e;
+            throw new PDOException($e->getMessage());
         }
     }
 
@@ -145,7 +152,7 @@ class TutorRepository extends Repository
             $stmt->execute();
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e){
-            return $e;
+            throw new PDOException($e->getMessage());
         }
     }
 }
