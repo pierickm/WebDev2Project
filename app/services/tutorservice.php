@@ -16,12 +16,12 @@ class TutorService {
         return $this->repository->getAll($offset, $limit);
     }
 
-    public function getOne($tutorId) {
-        return $this->repository->getOne($tutorId);
+    public function getOne($userId) {
+        return $this->repository->getOne($userId);
     }
 
     public function insert($tutor) {       
-        return $this->repository->insert($item);        
+        return $this->repository->insert($tutor);        
     }
 
     public function update($tutor) {       

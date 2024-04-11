@@ -34,7 +34,7 @@ class TutorController extends Controller
         }
     }
 
-    public function getOne($tutorId)
+    public function getOne($userId)
     {
         try {
             $decodedJwt = $this->verifyToken();
@@ -43,7 +43,7 @@ class TutorController extends Controller
                 return;
             }
 
-            $tutor = $this->service->getOne($tutorId);
+            $tutor = $this->service->getOne($userId);
             if($tutor) {
                 $this->respond($tutor);
             } else {
@@ -76,7 +76,7 @@ class TutorController extends Controller
         $this->respond($tutor);
     }
 
-    public function update($tutorId)
+    public function update($userId)
     {
         try {
             $decodedJwt = $this->verifyToken();
@@ -88,7 +88,7 @@ class TutorController extends Controller
 
             $usersTutorId = $this->service->getTutorIdByUserId($tutor->userId);
             
-            if (!($decodedJwt->data->userType == "Administrator" || $tutorId == $usersTutorId)) {
+            if (!$decodedJwt->data->userType == "Administrator" || !$tutor->tutorId == $usersTutorId) {
                 $this->respondWithError(403, "Forbidden - You are not authorized to update this account.");
                 return;
             }

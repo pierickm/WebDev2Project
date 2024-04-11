@@ -24,6 +24,7 @@ class AppointmentController extends Controller
             if(!$decodedHeader){
                 return;
             }
+            $userId = $decodedHeader->data->userId;
 
             $limit = isset($_GET['limit']) ? (int)$_GET['limit'] :20;
             $offset = isset($_GET['offset']) ? (int)$_GET['offset'] :0;
@@ -32,11 +33,14 @@ class AppointmentController extends Controller
                 $appointments = $this->service->getAll($offset, $limit);
                 $this->respond($appointments);
             }
+            if($decodedHeader->data->userType == 'Tutor'){
+                $appointments = $this->service->getAllForTutor($offset, $limit, $userId);
+                $this->respond($appointments);
+            }
             
-            $userId = $decodedHeader->data->userId;
             $appointments = $this->service->getAll($offset, $limit, $userId);
     
-            $this->respond($appointments);
+            return $appointments;
         } catch (Exception $e) {
             $this->respondWithError(500, $e->getMessage());
         }

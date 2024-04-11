@@ -37,5 +37,7 @@ $router->get('/users', 'UserController@getAll');
 $router->get('/users/(\d+)', 'UserController@getOne');
 $router->put('/users/(\d+)', 'UserController@update');
 $router->delete('/users/(\d+)', 'UserController@delete');
+$router->post('/uploadPhoto', 'UserController@uploadProfilePhoto');
+$router->get('/photo/(\S+)', 'UserController@getProfileImage');
 // Run it!
 $router->run();

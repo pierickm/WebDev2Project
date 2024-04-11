@@ -53,6 +53,42 @@ class AppointmentRepository extends Repository
         }
     }
     
+    public function getAllForTutor($offset, $limit, $userId) {
+        try {
+            $query = "
+            SELECT 
+                a.*,
+                student.firstName AS studentFirstName, 
+                student.lastName AS studentLastName, 
+                tutorUser.firstName AS tutorFirstName, 
+                tutorUser.lastName AS tutorLastName,
+                tutor.specialization AS topics
+            FROM 
+                Appointments a
+            LEFT JOIN 
+                Users student ON a.studentId = student.userId
+            LEFT JOIN 
+                Tutors tutor ON a.tutorId = tutor.tutorId
+            LEFT JOIN
+                Users tutorUser ON tutor.userId = tutorUser.userId
+            WHERE 
+                tutor.userId = :userId
+            LIMIT :limit OFFSET :offset";
+        
+            
+            $stmt = $this->connection->prepare($query);
+            
+            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+            
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new PDOException($e->getMessage());
+        }
+    }
+    
 
     function getOne($id)
     {

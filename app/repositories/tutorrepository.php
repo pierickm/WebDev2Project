@@ -36,9 +36,9 @@ class TutorRepository extends Repository
     function getOne($id)
     {
         try {
-            $stmt = $this->connection->prepare("SELECT T.*, U.firstName, U.lastName FROM Tutors T 
-                        INNER JOIN Users U ON T.userId = U.userId WHERE T.tutorId = :tutorId");
-            $stmt->bindParam(':tutorId', $id);
+            $stmt = $this->connection->prepare("SELECT T.*, U.firstName, U.lastName, U.emailAddress, U.profilePhoto FROM Tutors T 
+                        INNER JOIN Users U ON T.userId = U.userId WHERE T.userId = :userId");
+            $stmt->bindParam(':userId', $id);
             $stmt->execute();
 
             $stmt->setFetchMode(PDO::FETCH_CLASS, 'Models\Tutor');
@@ -70,20 +70,37 @@ class TutorRepository extends Repository
 
 
     function update($tutor)
-    {
-        try {
-            $stmt = $this->connection->prepare("UPDATE Tutors SET userId = :userId, specialization = :specializations, hourlyRate = :hourlyRate WHERE tutorId = :tutorId");
-            $stmt->bindParam(':tutorId', $tutor->tutorId);
-            $stmt->bindParam(':userId', $tutor->userId);
-            $stmt->bindParam(':specialization', $tutor->specialization);
-            $stmt->bindParam(':hourlyRate', $tutor->hourlyRate);
-            $stmt->execute();
+{
+    try {
+        // Start a transaction
+        $this->connection->beginTransaction();
 
-            return $tutor;
-        } catch (PDOException $e) {
-            throw new PDOException($e->getMessage());
-        }
+        // Update the Tutors table
+        $tutorStmt = $this->connection->prepare("UPDATE Tutors SET specialization = :specialization, hourlyRate = :hourlyRate WHERE tutorId = :tutorId");
+        $tutorStmt->bindParam(':tutorId', $tutor->tutorId);
+        $tutorStmt->bindParam(':specialization', $tutor->specialization);
+        $tutorStmt->bindParam(':hourlyRate', $tutor->hourlyRate);
+        $tutorStmt->execute();
+
+        // Update the Users table
+        $userStmt = $this->connection->prepare("UPDATE Users SET firstName = :firstName, lastName = :lastName, emailAddress = :emailAddress WHERE userId = :userId");
+        $userStmt->bindParam(':userId', $tutor->userId);
+        $userStmt->bindParam(':firstName', $tutor->firstName);
+        $userStmt->bindParam(':lastName', $tutor->lastName);
+        $userStmt->bindParam(':emailAddress', $tutor->emailAddress);
+        $userStmt->execute();
+
+        // Commit the transaction
+        $this->connection->commit();
+
+        return $tutor;
+    } catch (PDOException $e) {
+        // Roll back the transaction on error
+        $this->connection->rollBack();
+        throw new PDOException($e->getMessage());
     }
+}
+
 
     function delete($tutorId)
     {

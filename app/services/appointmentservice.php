@@ -19,6 +19,10 @@ class AppointmentService {
             return $this->repository->getAll($offset, $limit);
         }
     }
+
+    public function getAllForTutor($offset, $limit, $userId) {
+        return $this->repository->getAllForTutor($offset, $limit, $userId);
+    }
     
     public function getOne($id) {
         return $this->repository->getOne($id);

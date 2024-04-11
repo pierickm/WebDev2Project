@@ -63,7 +63,8 @@ class UserRepository extends Repository
             $stmt = $this->connection->prepare("SELECT userId, emailAddress, firstName, lastName, userType, profilePhoto FROM Users WHERE userId = :userId");
             $stmt->bindParam(':userId', $userId);
             $stmt->execute();
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->setFetchMode(PDO::FETCH_CLASS, 'Models\User');
+            return $stmt->fetch();
         } catch (PDOException $e) {
             throw new PDOException($e->getMessage());
         }
@@ -76,7 +77,7 @@ class UserRepository extends Repository
             $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
 
             $stmt->execute();
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new PDOException($e->getMessage());
         }

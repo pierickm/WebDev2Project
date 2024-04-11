@@ -152,4 +152,58 @@ class UserController extends Controller
             "expireAt" => $expirationSpan
         );
     }
+
+    public function uploadProfilePhoto() {
+    
+        $decodedJwt = $this->verifyToken();
+        if(!$decodedJwt){
+            return;
+        }
+    
+        if (isset($_FILES['profilePhoto'])) {
+            $file = $_FILES['profilePhoto'];
+            $directory = __DIR__ . '/../public/uploads/';
+            $targetFile = $directory . basename($file['name']);
+            
+            // You may want to add file validation here (e.g., check file type, size)
+    
+            if (move_uploaded_file($file['tmp_name'], $targetFile)) {
+                $filePath = '/uploads/' . basename($file['name']);
+    
+                // Return the uploaded file content
+                $fileContent = file_get_contents($targetFile);
+    
+                $this->respond(['success' => true, 'filePath' => $filePath, 'fileContent' => $fileContent]);
+            } else {
+                $this->respondWithError(500, "Failed to upload file.");
+            }
+        } else {
+            $this->respondWithError(400, "No file was uploaded.");
+        }
+    }
+
+    public function getProfileImage($imagePath) {
+        $decodedJwt = $this->verifyToken();
+        if (!$decodedJwt) {
+            return;
+        }
+    
+        // Check if the image path is valid
+        if (!file_exists($imagePath)) {
+            // If the image doesn't exist, return an error response
+            $this->respondWithError(404, "Image not found");
+            return;
+        }
+    
+        // Fetch the profile photo content
+        $profilePhotoContent = file_get_contents($imagePath);
+    
+        // Set the appropriate Content-Type header
+        $mime = mime_content_type($imagePath);
+        header("Content-Type: $mime");
+    
+        // Output the profile photo content
+        echo $profilePhotoContent;
+    }
+    
 }
