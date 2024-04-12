@@ -28,8 +28,8 @@ class TutorService {
         return $this->repository->update($tutor);        
     }
 
-    public function delete($tutorId) {       
-        return $this->repository->delete($tutorId);        
+    public function delete($userId) {       
+        return $this->repository->delete($userId);        
     }
 
     public function getAvailableSlotsForTutor($tutorId, $appointmentDate) {
@@ -39,6 +39,8 @@ class TutorService {
     public function getTutorIdByUserId($userId) {
         return $this->repository->getTutorIdByUserId($userId);
     }
-}
 
-?>
+    public function hashPassword($password) {
+        return $this->repository->hashPassword($password);
+    }
+}

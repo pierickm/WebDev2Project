@@ -72,7 +72,14 @@ class UserRepository extends Repository
 
     function getAll($limit, $offset) {
         try{
-            $stmt = $this->connection->prepare("SELECT * FROM Users LIMIT :limit OFFSET :offset");
+            $stmt = $this->connection->prepare("SELECT 
+                Users.*, 
+                Tutors.hourlyRate, 
+                Tutors.specialization,
+                Tutors.tutorId 
+                 FROM Users 
+                 LEFT JOIN Tutors ON Users.userId = Tutors.userId 
+                LIMIT :limit OFFSET :offset");
             $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
 
@@ -141,6 +148,45 @@ class UserRepository extends Repository
             return $this->getOne($user->userId);
         } catch (PDOException $e) {
             throw new PDOException($e->getMessage());
+        }
+    }
+
+    public function create(User $user) {
+        try {
+            $emailInUse = $this->checkExistingUser($user);
+            if(!$emailInUse){
+                $stmt = $this->connection->prepare("INSERT INTO Users (emailAddress, firstName, lastName, password, userType, profilePhoto) VALUES (:emailAddress, :firstName, :lastName, :password, :userType, :profilePhoto)");
+                $stmt->bindParam(':emailAddress', $user->emailAddress);
+                $stmt->bindParam(':firstName', $user->firstName);
+                $stmt->bindParam(':lastName', $user->lastName);
+                $stmt->bindParam(':password', $user->password);
+                $stmt->bindParam(':userType', $user->userType);
+                $stmt->bindParam(':profilePhoto', $user->profilePhoto);
+                $stmt->execute();
+        
+                $insertedId = $this->connection->lastInsertId();
+                
+                $insertedUser = $this->getOne($insertedId);
+                return $insertedUser;
+            } else{
+                throw new Exception("This email is already used by another account.");
+            }
+           
+        } catch (PDOException $e) {
+            throw new PDOException("Database error: " . $e->getMessage());
+        } catch (Exception $e) {
+            throw new Exception("Error: " . $e->getMessage());
+        }
+    }
+
+    public function deleteTutorEntry($userId) {
+        try {
+            $stmt = $this->connection->prepare("DELETE FROM Tutors WHERE userId = :userId");
+            $stmt->bindParam(":userId", $userId);
+            $stmt->execute();
+
+        } catch (PDOException $e) {
+            throw new PDOException("Database error". $e->getMessage());
         }
     }
 }

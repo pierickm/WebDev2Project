@@ -8,6 +8,5 @@ class Tutor extends User {
     public string $lastName;
     public float $hourlyRate;
     public string $profilePhoto;
-}
 
-?>
+}

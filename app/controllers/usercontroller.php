@@ -23,7 +23,7 @@ class UserController extends Controller
     public function login() {
         $postedUser = $this->createObjectFromPostedJson("Models\\User");
         $user = $this->service->CheckLogin($postedUser->password, $postedUser->emailAddress);
-
+        
         if(!$user) {
             $this->respondWithError(401, "Invalid login");
             return;
@@ -50,6 +50,20 @@ class UserController extends Controller
         $this->respond($user);
     }
 
+
+    public function create() {
+        try{
+            $postedUser = $this->createObjectFromPostedJson("Models\\User");
+            $postedUser->password = $this->service->hashPassword($postedUser->password);
+            $user = $this->service->create($postedUser);
+        } catch(Exception $e) {
+            $this->respondWithError(500, $e->getMessage());
+            return;
+        }
+
+        $this->respond($user);
+    }
+
     public function update($userId) {
         $decodedJwt = $this->verifyToken();
         try {
@@ -60,6 +74,9 @@ class UserController extends Controller
             }
             $user->userId = $userId;
             $updatedUser = $this->service->update($user);
+            if($updatedUser && $user->deleteTutorEntry) {
+                $this->service->deleteTutorEntry($user->userId);
+            }
             $this->respond($updatedUser);
         } catch(Exception $e) {
             $this->respondWithError(500, $e->getMessage());
@@ -110,8 +127,8 @@ class UserController extends Controller
     public function delete($userId) {
         $decodedJwt = $this->verifyToken();
         
-        if(!($decodedJwt->data->userType == "Administrator" || $decodedJwt->data->id == $userId)) {
-            $this->respondWithError(403, "Forbidden - Since you are not an Administrator, you can only delete your account.");
+        if(!$decodedJwt->data->userType == "Administrator") {
+            $this->respondWithError(403, "Forbidden - Only administrators can delete accounts.");
             return;
         }
 
@@ -120,13 +137,11 @@ class UserController extends Controller
             if ($result === true) {
                 $this->respond(['success' => true]);
             } else {
-                $this->respondWithError(500, "Failed to delete user: " . $result->getMessage());
+                $this->respondWithError(500, "Failed to delete user: " . $result);
             }
-        } catch(Exceptipn $e) {
+        } catch(Exception $e) {
             $this->respondWithError(500, $e->getMessage());
         }
-
-        $this->respond(['success' => true]);
     }
 
     public function generateJWT($user) {
@@ -170,10 +185,7 @@ class UserController extends Controller
             if (move_uploaded_file($file['tmp_name'], $targetFile)) {
                 $filePath = '/uploads/' . basename($file['name']);
     
-                // Return the uploaded file content
-                $fileContent = file_get_contents($targetFile);
-    
-                $this->respond(['success' => true, 'filePath' => $filePath, 'fileContent' => $fileContent]);
+                $this->respond(['success' => true, 'filePath' => $filePath]);
             } else {
                 $this->respondWithError(500, "Failed to upload file.");
             }
@@ -181,29 +193,4 @@ class UserController extends Controller
             $this->respondWithError(400, "No file was uploaded.");
         }
     }
-
-    public function getProfileImage($imagePath) {
-        $decodedJwt = $this->verifyToken();
-        if (!$decodedJwt) {
-            return;
-        }
-    
-        // Check if the image path is valid
-        if (!file_exists($imagePath)) {
-            // If the image doesn't exist, return an error response
-            $this->respondWithError(404, "Image not found");
-            return;
-        }
-    
-        // Fetch the profile photo content
-        $profilePhotoContent = file_get_contents($imagePath);
-    
-        // Set the appropriate Content-Type header
-        $mime = mime_content_type($imagePath);
-        header("Content-Type: $mime");
-    
-        // Output the profile photo content
-        echo $profilePhotoContent;
-    }
-    
 }

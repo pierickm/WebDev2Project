@@ -24,6 +24,10 @@ class UserService {
         return $this->repository->register($user);
     }
 
+    public function create(User $user) {
+        return $this->repository->create($user);
+    }
+
     public function update(User $user) {
         return $this->repository->update($user);
     }
@@ -39,6 +43,8 @@ class UserService {
     public function delete($userId) {
         return $this->repository->delete($userId);
     }
-}
 
-?>
+    public function deleteTutorEntry($userId) {
+        return $this->repository->deleteTutorEntry($userId);
+    }
+}

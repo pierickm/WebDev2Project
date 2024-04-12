@@ -67,7 +67,6 @@ class Controller
         $json = file_get_contents('php://input');
         $data = json_decode($json);
 
-
         $object = new $className();
         foreach ($data as $key => $value) {
             if(is_object($value)) {

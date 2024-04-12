@@ -13,6 +13,7 @@ class User {
     public string $emailAddress;
     public string $userType;
     public string $profilePhoto;
+    public $deleteTutorEntry = false;
 
 }
 ?>

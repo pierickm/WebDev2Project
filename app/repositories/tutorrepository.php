@@ -36,7 +36,7 @@ class TutorRepository extends Repository
     function getOne($id)
     {
         try {
-            $stmt = $this->connection->prepare("SELECT T.*, U.firstName, U.lastName, U.emailAddress, U.profilePhoto FROM Tutors T 
+            $stmt = $this->connection->prepare("SELECT T.*, U.firstName, U.lastName, U.emailAddress, U.profilePhoto, U.userType FROM Tutors T 
                         INNER JOIN Users U ON T.userId = U.userId WHERE T.userId = :userId");
             $stmt->bindParam(':userId', $id);
             $stmt->execute();
@@ -53,8 +53,22 @@ class TutorRepository extends Repository
     function insert($tutor)
     {
         try {
+            $this->connection->beginTransaction();
+
+            $userStmt = $this->connection->prepare("INSERT INTO Users (firstName, lastName, emailAddress, password, profilePhoto, userType) VALUES (:firstName, :lastName, :emailAddress, :password, :profilePhoto, :userType)");
+            $userStmt->bindParam(':firstName', $tutor->firstName);
+            $userStmt->bindParam(':lastName', $tutor->lastName);
+            $userStmt->bindParam(':emailAddress', $tutor->emailAddress);
+            $userStmt->bindParam(':profilePhoto', $tutor->profilePhoto);
+            $userStmt->bindParam(':password', $tutor->password);
+            $userStmt->bindParam(':userType', $tutor->userType);
+            
+            $userStmt->execute();
+            
+            $lastInsertedUserId = $this->connection->lastInsertId();
+
             $stmt = $this->connection->prepare("INSERT INTO Tutors (userId, specialization, hourlyRate) VALUES (:userId, :specialization, :hourlyRate)");
-            $stmt->bindParam(':userId', $tutor->userId);
+            $stmt->bindParam(':userId', $lastInsertedUserId);
             $stmt->bindParam(':specialization', $tutor->specialization);
             $stmt->bindParam(':hourlyRate', $tutor->hourlyRate);
 
@@ -62,54 +76,71 @@ class TutorRepository extends Repository
 
             $tutor->tutorId = $this->connection->lastInsertId();
 
-            return $tutor;
+            $this->connection->commit();
+
+            return $this->getOne($lastInsertedUserId);
         } catch (PDOException $e) {
+            $this->connection->rollBack();
             throw new PDOException($e->getMessage());
         }
     }
 
 
     function update($tutor)
-{
-    try {
-        // Start a transaction
-        $this->connection->beginTransaction();
-
-        // Update the Tutors table
-        $tutorStmt = $this->connection->prepare("UPDATE Tutors SET specialization = :specialization, hourlyRate = :hourlyRate WHERE tutorId = :tutorId");
-        $tutorStmt->bindParam(':tutorId', $tutor->tutorId);
-        $tutorStmt->bindParam(':specialization', $tutor->specialization);
-        $tutorStmt->bindParam(':hourlyRate', $tutor->hourlyRate);
-        $tutorStmt->execute();
-
-        // Update the Users table
-        $userStmt = $this->connection->prepare("UPDATE Users SET firstName = :firstName, lastName = :lastName, emailAddress = :emailAddress WHERE userId = :userId");
-        $userStmt->bindParam(':userId', $tutor->userId);
-        $userStmt->bindParam(':firstName', $tutor->firstName);
-        $userStmt->bindParam(':lastName', $tutor->lastName);
-        $userStmt->bindParam(':emailAddress', $tutor->emailAddress);
-        $userStmt->execute();
-
-        // Commit the transaction
-        $this->connection->commit();
-
-        return $tutor;
-    } catch (PDOException $e) {
-        // Roll back the transaction on error
-        $this->connection->rollBack();
-        throw new PDOException($e->getMessage());
-    }
-}
-
-
-    function delete($tutorId)
     {
         try {
-            $stmt = $this->connection->prepare("DELETE FROM Tutors WHERE tutorId = :tutorId");
-            $stmt->bindParam(':tutorId', $tutorId);
-            $stmt->execute();
+            // Start a transaction
+            $this->connection->beginTransaction();
+
+            // Update the Tutors table
+            $tutorStmt = $this->connection->prepare("UPDATE Tutors SET specialization = :specialization, hourlyRate = :hourlyRate WHERE tutorId = :tutorId");
+            $tutorStmt->bindParam(':tutorId', $tutor->tutorId);
+            $tutorStmt->bindParam(':specialization', $tutor->specialization);
+            $tutorStmt->bindParam(':hourlyRate', $tutor->hourlyRate);
+            $tutorStmt->execute();
+
+            // Update the Users table
+            $userStmt = $this->connection->prepare("UPDATE Users SET firstName = :firstName, lastName = :lastName, emailAddress = :emailAddress WHERE userId = :userId");
+            $userStmt->bindParam(':userId', $tutor->userId);
+            $userStmt->bindParam(':firstName', $tutor->firstName);
+            $userStmt->bindParam(':lastName', $tutor->lastName);
+            $userStmt->bindParam(':emailAddress', $tutor->emailAddress);
+            $userStmt->execute();
+
+            // Commit the transaction
+            $this->connection->commit();
+
+            return $tutor;
+        } catch (PDOException $e) {
+            // Roll back the transaction on error
+            $this->connection->rollBack();
+            throw new PDOException($e->getMessage());
+        }
+    }
+
+
+    function delete($userId) {
+        try {
+            // Begin a transaction
+            $this->connection->beginTransaction();
+
+            // First, delete from Tutors table if the user is a tutor
+            $stmtTutors = $this->connection->prepare("DELETE FROM Tutors WHERE userId = :userId");
+            $stmtTutors->bindParam(':userId', $userId, PDO::PARAM_INT);
+            $stmtTutors->execute();
+
+            // Then, delete from Users table
+            $stmtUsers = $this->connection->prepare("DELETE FROM Users WHERE userId = :userId");
+            $stmtUsers->bindParam(':userId', $userId, PDO::PARAM_INT);
+            $stmtUsers->execute();
+
+            // Commit the transaction
+            $this->connection->commit();
+
             return true;
         } catch (PDOException $e) {
+            // Roll back the transaction if something failed
+            $this->connection->rollBack();
             throw new PDOException($e->getMessage());
         }
     }
@@ -171,5 +202,10 @@ class TutorRepository extends Repository
         } catch (PDOException $e){
             throw new PDOException($e->getMessage());
         }
+    }
+
+    function hashPassword($password)
+    {
+        return password_hash($password, PASSWORD_DEFAULT);
     }
 }

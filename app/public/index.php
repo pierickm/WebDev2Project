@@ -33,6 +33,7 @@ $router->get('tutors/(\d+)/availability', 'TutorController@getAvailableSlotsForT
 //route for user endpoint
 $router->post('/login', 'UserController@login');
 $router->post('/register', 'UserController@register');
+$router->post('/users', 'UserController@create');
 $router->get('/users', 'UserController@getAll');
 $router->get('/users/(\d+)', 'UserController@getOne');
 $router->put('/users/(\d+)', 'UserController@update');

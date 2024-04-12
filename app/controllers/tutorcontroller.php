@@ -68,12 +68,16 @@ class TutorController extends Controller
             }
 
             $tutor = $this->createObjectFromPostedJson("Models\\Tutor");
-            $this->service->insert($tutor);
+            $tutor->password = $this->service->hashPassword($tutor->password);
+            $createdTutor = $this->service->insert($tutor);
+            if($createdTutor){
+                $this->respond($createdTutor);
+            } else {
+                $this->respondWithError(500, 'An error occured while creating the User.');
+            }
         } catch (Exception $e) {
             $this->respondWithError(500, $e->getMessage());
         }
-
-        $this->respond($tutor);
     }
 
     public function update($userId)
@@ -84,11 +88,13 @@ class TutorController extends Controller
                 return;
             }
             $tutor = $this->createObjectFromPostedJson("Models\\Tutor");
-            $tutor->userId = $decodedJwt->data->userId;
+            if($decodedJwt->data->userType == "Tutor"){
+                $tutor->userId = $decodedJwt->data->userId;
+            }
 
             $usersTutorId = $this->service->getTutorIdByUserId($tutor->userId);
             
-            if (!$decodedJwt->data->userType == "Administrator" || !$tutor->tutorId == $usersTutorId) {
+            if (!$decodedJwt->data->userType == "Administrator" && !$tutor->tutorId == $usersTutorId) {
                 $this->respondWithError(403, "Forbidden - You are not authorized to update this account.");
                 return;
             }
@@ -100,7 +106,7 @@ class TutorController extends Controller
         }
     }
 
-    public function delete($tutorId)
+    public function delete($userId)
     {
         try {
             $decodedJwt = $this->verifyToken();
@@ -112,7 +118,7 @@ class TutorController extends Controller
                 $this->respondWithError(403, "Unauthorized access. Only administrators have access to this.");
                 return;
             }
-            $this->service->delete($tutorId);
+            $this->service->delete($userId);
         } catch (Exception $e) {
             $this->respondWithError(500, $e->getMessage());
         }
@@ -136,8 +142,6 @@ class TutorController extends Controller
                 return;
             }
                 $availableSlots = $this->service->getAvailableSlotsForTutor($tutorId, $appointmentDate);
-                  
-
             if (!$availableSlots) {
                 $this->respondWithError(404, "No available slots found");
                 return;
