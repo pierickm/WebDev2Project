@@ -10,7 +10,8 @@ use Repositories\Repository;
 
 class AppointmentRepository extends Repository
 {
-    function getAll($offset, $limit, $userId = null) {
+    function getAll($offset, $limit, $userId = null)
+    {
         try {
             $query = "
                 SELECT 
@@ -29,31 +30,32 @@ class AppointmentRepository extends Repository
                 LEFT JOIN
                     Users tutorUser ON tutor.userId = tutorUser.userId
             ";
-            
+
             // Add condition for user-specific appointments
             if ($userId !== null) {
                 $query .= " WHERE a.studentId = :userId";
             }
-            
+
             $query .= " LIMIT :limit OFFSET :offset";
-            
+
             $stmt = $this->connection->prepare($query);
-            
+
             if ($userId !== null) {
                 $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
             }
-            
+
             $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-            
+
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new PDOException($e->getMessage());
         }
     }
-    
-    public function getAllForTutor($offset, $limit, $userId) {
+
+    public function getAllForTutor($offset, $limit, $userId)
+    {
         try {
             $query = "
             SELECT 
@@ -74,21 +76,21 @@ class AppointmentRepository extends Repository
             WHERE 
                 tutor.userId = :userId
             LIMIT :limit OFFSET :offset";
-        
-            
+
+
             $stmt = $this->connection->prepare($query);
-            
+
             $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
             $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-            
+
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new PDOException($e->getMessage());
         }
     }
-    
+
 
     function getOne($id)
     {
@@ -117,8 +119,9 @@ class AppointmentRepository extends Repository
         }
     }
 
-    public function getTotalAppointmentsCount() {
-        try{
+    public function getTotalAppointmentsCount()
+    {
+        try {
             $stmt = $this->connection->prepare("SELECT COUNT(*) FROM Appointments");
             $stmt->execute();
             return $stmt->fetchColumn();
@@ -127,7 +130,8 @@ class AppointmentRepository extends Repository
         }
     }
 
-    public function getTotalAppointmentsCountForTutor($userId) {
+    public function getTotalAppointmentsCountForTutor($userId)
+    {
         try {
             $stmt = $this->connection->prepare("
                 SELECT COUNT(*) 
@@ -135,20 +139,21 @@ class AppointmentRepository extends Repository
                 INNER JOIN Tutors ON Appointments.tutorId = Tutors.tutorId
                 WHERE Tutors.userId = :userId
             ");
-            
+
             $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-            
+
             $stmt->execute();
-            
+
             return $stmt->fetchColumn();
         } catch (PDOException $e) {
             throw new PDOException($e->getMessage());
         }
     }
-    
 
-    public function getTotalAppointmentsCountForStudent($userId) {
-        try{
+
+    public function getTotalAppointmentsCountForStudent($userId)
+    {
+        try {
             $stmt = $this->connection->prepare("SELECT COUNT(*) FROM Appointments WHERE studentId = :studentId");
             $stmt->bindParam(':studentId', $userId);
             $stmt->execute();
@@ -168,7 +173,7 @@ class AppointmentRepository extends Repository
             $stmt->bindParam(':appointmentTime', $appointment->appointmentTime);
             $stmt->bindParam(':comment', $appointment->comment);
             $stmt->bindParam(':status', $appointment->status);
-            
+
             $stmt->execute();
 
             $appointment->appointmentId = $this->connection->lastInsertId();
@@ -211,7 +216,8 @@ class AppointmentRepository extends Repository
         }
     }
 
-    function checkAppointmentAvailability($tutorId, $appointmentDate, $appointmentTime) {
+    function checkAppointmentAvailability($tutorId, $appointmentDate, $appointmentTime)
+    {
         try {
             $stmt = $this->connection->prepare("
                 SELECT COUNT(*) AS count
@@ -220,22 +226,22 @@ class AppointmentRepository extends Repository
                 AND appointmentDate = :appointmentDate 
                 AND appointmentTime = :appointmentTime
             ");
-    
+
             $formattedAppointmentDate = date('Y-m-d', strtotime($appointmentDate));
             $formattedAppointmentTime = date('H:i:s', strtotime($appointmentTime));
-    
+
             $stmt->bindParam(':tutorId', $tutorId, PDO::PARAM_INT);
             $stmt->bindParam(':appointmentDate', $formattedAppointmentDate, PDO::PARAM_STR);
             $stmt->bindParam(':appointmentTime', $formattedAppointmentTime, PDO::PARAM_STR);
             $stmt->execute();
-    
+
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             $appointmentCount = $result['count'];
-    
+
             return ($appointmentCount === 0);
         } catch (PDOException $e) {
             throw new PDOException($e->getMessage());
         }
     }
-    
+
 }

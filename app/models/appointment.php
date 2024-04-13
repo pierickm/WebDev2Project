@@ -1,7 +1,8 @@
 <?php
 namespace Models;
 
-class Appointment {
+class Appointment
+{
 
     const STATUS_PENDING = 'Pending';
     const STATUS_CONFIRMED = 'Confirmed';
@@ -16,7 +17,8 @@ class Appointment {
     public string $comment;
     public string $status;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->appointmentId = 0;
         $this->status = self::STATUS_CONFIRMED;
     }

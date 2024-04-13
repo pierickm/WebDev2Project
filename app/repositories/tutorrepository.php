@@ -18,7 +18,7 @@ class TutorRepository extends Repository
             if (isset($limit) && isset($offset)) {
                 $query .= " LIMIT :limit OFFSET :offset ";
             }
-            
+
             $stmt = $this->connection->prepare($query);
             if (isset($limit) && isset($offset)) {
                 $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
@@ -51,8 +51,9 @@ class TutorRepository extends Repository
         }
     }
 
-    public function getTotalTutorsCount() {
-        try{
+    public function getTotalTutorsCount()
+    {
+        try {
             $stmt = $this->connection->prepare("SELECT COUNT(*) FROM Tutors");
             $stmt->execute();
             return $stmt->fetchColumn();
@@ -65,8 +66,8 @@ class TutorRepository extends Repository
     {
         try {
             $this->connection->beginTransaction();
-            if($tutor->userId == null) {
-               $tutor->userId = $this->insertUserData($tutor);
+            if ($tutor->userId == null) {
+                $tutor->userId = $this->insertUserData($tutor);
             }
 
             $stmt = $this->connection->prepare("INSERT INTO Tutors (userId, specialization, hourlyRate) VALUES (:userId, :specialization, :hourlyRate)");
@@ -75,7 +76,7 @@ class TutorRepository extends Repository
             $stmt->bindParam(':hourlyRate', $tutor->hourlyRate);
 
             $stmt->execute();
-            
+
 
             $tutor->tutorId = $this->connection->lastInsertId();
 
@@ -88,10 +89,11 @@ class TutorRepository extends Repository
         }
     }
 
-    private function insertUserData($user) {
+    private function insertUserData($user)
+    {
         try {
             $emailInUse = $this->checkExistingUser($user);
-            if(!$emailInUse){
+            if (!$emailInUse) {
                 $hashedPassword = $this->hashPassword($user->password);
                 $stmt = $this->connection->prepare("INSERT INTO Users (emailAddress, firstName, lastName, password, userType, profilePhoto) VALUES (:emailAddress, :firstName, :lastName, :password, :userType, :profilePhoto)");
                 $stmt->bindParam(':emailAddress', $user->emailAddress);
@@ -101,12 +103,12 @@ class TutorRepository extends Repository
                 $stmt->bindParam(':userType', $user->userType);
                 $stmt->bindParam(':profilePhoto', $user->profilePhoto);
                 $stmt->execute();
-        
+
                 return $this->connection->lastInsertId();
-            } else{
+            } else {
                 throw new Exception("This email is already used by another account.");
             }
-           
+
         } catch (PDOException $e) {
             throw new PDOException("Database error: " . $e->getMessage());
         } catch (Exception $e) {
@@ -148,7 +150,8 @@ class TutorRepository extends Repository
     }
 
 
-    function delete($userId) {
+    function delete($userId)
+    {
         try {
             // Begin a transaction
             $this->connection->beginTransaction();
@@ -176,7 +179,7 @@ class TutorRepository extends Repository
 
     public function getAvailableSlotsForTutor($tutorId, $appointmentDate)
     {
-        
+
         try {
             $fixedAppointmentLength = 45;
             $startTime = '09:00';
@@ -203,11 +206,11 @@ class TutorRepository extends Repository
 
             $existingAppointments = $stmt->fetchAll(PDO::FETCH_COLUMN);
             // Format existing appointments to "H:i"
-            $existingAppointments = array_map(function($time) {
+            $existingAppointments = array_map(function ($time) {
                 return substr($time, 0, 5); // Converts "HH:MM:SS" to "HH:MM"
             }, $existingAppointments);
 
-        
+
             $availableSlots = [];
             $currentTime = strtotime($startTime);
             while ($currentTime < strtotime($endTime)) {
@@ -224,13 +227,14 @@ class TutorRepository extends Repository
         }
     }
 
-    public function getTutorIdByUserId($userId) {
-        try{
+    public function getTutorIdByUserId($userId)
+    {
+        try {
             $stmt = $this->connection->prepare("SELECT tutorId FROM Tutors WHERE userId = :userId");
             $stmt->bindParam(':userId', $userId);
             $stmt->execute();
             return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e){
+        } catch (PDOException $e) {
             throw new PDOException($e->getMessage());
         }
     }
@@ -240,13 +244,14 @@ class TutorRepository extends Repository
         return password_hash($password, PASSWORD_DEFAULT);
     }
 
-    function checkExistingUser($user) {
-        try{
+    function checkExistingUser($user)
+    {
+        try {
             $stmt = $this->connection->prepare("SELECT COUNT(*) FROM Users WHERE emailAddress = :emailAddress");
             $stmt->bindParam(":emailAddress", $user->emailAddress);
             $stmt->execute();
 
-            if($stmt->fetchColumn() > 0){
+            if ($stmt->fetchColumn() > 0) {
                 return true;
             }
             return false;

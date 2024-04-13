@@ -22,11 +22,9 @@ class Controller
             return null;
         }
 
-        //get token 
         $authenticationHeader = $_SERVER['HTTP_AUTHORIZATION'];
         $subParts = explode(" ", $authenticationHeader);
 
-        //check header format
         if(count($subParts) !== 2 || $subParts[0] !== 'Bearer') {
             $this->respondWithError(401, "The token format is not valid");
             return null;

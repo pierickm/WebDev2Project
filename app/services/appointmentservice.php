@@ -3,7 +3,8 @@ namespace Services;
 
 use Repositories\AppointmentRepository;
 
-class AppointmentService {
+class AppointmentService
+{
 
     private $repository;
 
@@ -12,7 +13,8 @@ class AppointmentService {
         $this->repository = new AppointmentRepository();
     }
 
-    public function getAll($offset = 0, $limit = 10, $userId = null) {
+    public function getAll($offset = 0, $limit = 10, $userId = null)
+    {
         if ($userId !== null) {
             return $this->repository->getAll($offset, $limit, $userId);
         } else {
@@ -20,39 +22,48 @@ class AppointmentService {
         }
     }
 
-    public function getAllForTutor($offset, $limit, $userId) {
+    public function getAllForTutor($offset, $limit, $userId)
+    {
         return $this->repository->getAllForTutor($offset, $limit, $userId);
     }
-    
-    public function getOne($id) {
+
+    public function getOne($id)
+    {
         return $this->repository->getOne($id);
     }
 
-    public function create($appointment) {       
-        return $this->repository->create($appointment);        
+    public function create($appointment)
+    {
+        return $this->repository->create($appointment);
     }
 
-    public function update($appointment) {       
-        return $this->repository->update($appointment);        
+    public function update($appointment)
+    {
+        return $this->repository->update($appointment);
     }
 
-    public function delete($appointment) {       
-        return $this->repository->delete($appointment);        
+    public function delete($appointment)
+    {
+        return $this->repository->delete($appointment);
     }
 
-    public function checkAppointmentAvailability($tutorId, $appointmentDate, $appointmentTime){
+    public function checkAppointmentAvailability($tutorId, $appointmentDate, $appointmentTime)
+    {
         return $this->repository->checkAppointmentAvailability($tutorId, $appointmentDate, $appointmentTime);
     }
 
-    public function getTotalAppointmentsCount() {
+    public function getTotalAppointmentsCount()
+    {
         return $this->repository->getTotalAppointmentsCount();
     }
-    
-    public function getTotalAppointmentsCountForTutor($userId){
+
+    public function getTotalAppointmentsCountForTutor($userId)
+    {
         return $this->repository->getTotalAppointmentsCountForTutor($userId);
     }
 
-    public function getTotalAppointmentsCountForStudent($userId){
+    public function getTotalAppointmentsCountForStudent($userId)
+    {
         return $this->repository->getTotalAppointmentsCountForStudent($userId);
     }
 }

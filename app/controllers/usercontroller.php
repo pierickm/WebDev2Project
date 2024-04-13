@@ -3,7 +3,7 @@
 namespace Controllers;
 
 require __DIR__ . '/../vendor/autoload.php';
-require __DIR__ .'/../Validation.php';
+require __DIR__ . '/../Validation.php';
 
 use Exception;
 use Models\User;
@@ -16,30 +16,30 @@ class UserController extends Controller
 {
     private $service;
 
-    // initialize services
     function __construct()
     {
         parent::__construct();
         $this->service = new UserService();
     }
 
-    public function login() {
+    public function login()
+    {
         $postedUser = $this->createObjectFromPostedJson("Models\\User");
 
-        $validator = new Validation((array)$postedUser, [], ['emailAddress']);
+        $validator = new Validation((array) $postedUser, [], ['emailAddress']);
         $errors = $validator->validate();
         if (!$validator->isValid()) {
             $this->respondWithError(400, $errors);
             return;
         }
         $user = $this->service->CheckLogin($postedUser->password, $postedUser->emailAddress);
-        
-        if(!$user) {
+
+        if (!$user) {
             $this->respondWithError(401, "Invalid login");
             return;
         }
 
-        try{
+        try {
             $tokenResponse = $this->generateJWT($user);
             $this->respond($tokenResponse);
         } catch (Exception $e) {
@@ -47,11 +47,12 @@ class UserController extends Controller
         }
     }
 
-    public function register() {
-        try{
+    public function register()
+    {
+        try {
             $postedUser = $this->createObjectFromPostedJson("Models\\User");
             // Validation
-            $validator = new Validation((array)$postedUser, ['emailAddress', 'password', 'firstName', 'lastName'], ['emailAddress']);
+            $validator = new Validation((array) $postedUser, ['emailAddress', 'password', 'firstName', 'lastName'], ['emailAddress']);
             $errors = $validator->validate();
             if (!$validator->isValid()) {
                 $this->respondWithError(400, $errors);
@@ -60,7 +61,7 @@ class UserController extends Controller
 
             $postedUser->password = $this->service->hashPassword($postedUser->password);
             $user = $this->service->register($postedUser);
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             $this->respondWithError(500, $e->getMessage());
             return;
         }
@@ -69,10 +70,11 @@ class UserController extends Controller
     }
 
 
-    public function create() {
-        try{
+    public function create()
+    {
+        try {
             $postedUser = $this->createObjectFromPostedJson("Models\\User");
-            $validator = new Validation((array)$postedUser, ['emailAddress', 'password', 'firstName', 'lastName', 'userType'], ['emailAddress']);
+            $validator = new Validation((array) $postedUser, ['emailAddress', 'password', 'firstName', 'lastName', 'userType'], ['emailAddress']);
             $errors = $validator->validate();
             if (!$validator->isValid()) {
                 $this->respondWithError(400, $errors);
@@ -80,7 +82,7 @@ class UserController extends Controller
             }
             $postedUser->password = $this->service->hashPassword($postedUser->password);
             $user = $this->service->create($postedUser);
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             $this->respondWithError(500, $e->getMessage());
             return;
         }
@@ -88,39 +90,41 @@ class UserController extends Controller
         $this->respond($user);
     }
 
-    public function update($userId) {
+    public function update($userId)
+    {
         $decodedJwt = $this->verifyToken();
         try {
             $user = $this->createObjectFromPostedJson("Models\\User");
-            $validator = new Validation((array)$user, ['firstName', 'lastName', 'emailAddress', 'userType'], ['emailAddress']);
+            $validator = new Validation((array) $user, ['firstName', 'lastName', 'emailAddress', 'userType'], ['emailAddress']);
             $errors = $validator->validate();
             if (!$validator->isValid()) {
                 $this->respondWithError(400, $errors);
                 return;
             }
-            if(!$decodedJwt->data->userType == "Administrator" && !$decodedJwt->data->userId == $userId) {
+            if (!$decodedJwt->data->userType == "Administrator" && !$decodedJwt->data->userId == $userId) {
                 $this->respondWithError(403, "Forbidden - Since you are not an Administrator, you can only update your account.");
                 return;
             }
             $user->userId = $userId;
             $updatedUser = $this->service->update($user);
-            if($updatedUser &&  isset($user->deleteTutorEntry) && $user->deleteTutorEntry) {
+            if ($updatedUser && isset($user->deleteTutorEntry) && $user->deleteTutorEntry) {
                 $this->service->deleteTutorEntry($user->userId);
             }
             $this->respond($updatedUser);
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             $this->respondWithError(500, $e->getMessage());
         }
     }
 
-    public function getAll(){
-        try{
+    public function getAll()
+    {
+        try {
             $decodedJwt = $this->verifyToken();
-            if(!$decodedJwt){
+            if (!$decodedJwt) {
                 return;
             }
-            
-            if(!$decodedJwt->data->userType == "Administrator") {
+
+            if (!$decodedJwt->data->userType == "Administrator") {
                 $this->respondWithError(403, "Unauthorized access. Only administrators have access to this.");
                 return;
             }
@@ -144,9 +148,10 @@ class UserController extends Controller
         }
     }
 
-    public function getOne($userId) {
+    public function getOne($userId)
+    {
         $decodedJwt = $this->verifyToken();
-        if($decodedJwt->data->userId != $userId && $decodedJwt->data->userType !== "Administrator"){
+        if ($decodedJwt->data->userId != $userId && $decodedJwt->data->userType !== "Administrator") {
             $this->respondWithError(403, "Forbidden - Since you are not an Administrator, you can only view your own account.");
             return;
         }
@@ -155,7 +160,7 @@ class UserController extends Controller
 
         try {
             $user = $this->service->getOne($userId);
-            if($user) {
+            if ($user) {
                 $this->respond($user);
             } else {
                 $this->respondWithError(404, "User not found");
@@ -165,32 +170,34 @@ class UserController extends Controller
         }
     }
 
-    public function delete($userId) {
+    public function delete($userId)
+    {
         $decodedJwt = $this->verifyToken();
-        
-        if(!$decodedJwt->data->userType == "Administrator") {
+
+        if (!$decodedJwt->data->userType == "Administrator") {
             $this->respondWithError(403, "Forbidden - Only administrators can delete accounts.");
             return;
         }
 
         $userId = filter_var($userId, FILTER_SANITIZE_NUMBER_INT);
 
-        try{
+        try {
             $result = $this->service->delete($userId);
             if ($result === true) {
                 $this->respond(['success' => true]);
             } else {
                 $this->respondWithError(500, "Failed to delete user: " . $result);
             }
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             $this->respondWithError(500, $e->getMessage());
         }
     }
 
-    public function generateJWT($user) {
+    public function generateJWT($user)
+    {
         $issuedAt = time();
         $expirationSpan = $issuedAt + (30 * 60);
-        
+
         $token = JWT::encode([
             "iss" => 'localhost.com',
             "aud" => 'localhost.com',
@@ -211,13 +218,14 @@ class UserController extends Controller
         );
     }
 
-    public function uploadProfilePhoto() {
-    
+    public function uploadProfilePhoto()
+    {
+
         $decodedJwt = $this->verifyToken();
-        if(!$decodedJwt){
+        if (!$decodedJwt) {
             return;
         }
-    
+
         if (isset($_FILES['profilePhoto'])) {
             $file = $_FILES['profilePhoto'];
             if (!$this->validateFile($file)) {
@@ -226,10 +234,10 @@ class UserController extends Controller
             $directory = __DIR__ . '/../public/uploads/';
             $filename = $this->sanitizeFilename($file['name']);
             $targetFile = $directory . $filename;
-                
+
             if (move_uploaded_file($file['tmp_name'], $targetFile)) {
                 $filePath = '/uploads/' . $filename;
-    
+
                 $this->respond(['success' => true, 'filePath' => $filePath]);
             } else {
                 $this->respondWithError(500, "Failed to upload file.");
@@ -238,7 +246,8 @@ class UserController extends Controller
             $this->respondWithError(400, "No file was uploaded.");
         }
     }
-    private function validateFile($file) {
+    private function validateFile($file)
+    {
         // Validate file size
         $maxFileSize = 5 * 1024 * 1024; // 5 MB in bytes
         if ($file['size'] > $maxFileSize) {
@@ -247,7 +256,7 @@ class UserController extends Controller
         }
 
         // Validate file type
-        $allowedTypes = ['image/jpeg','image/jpg', 'image/png', 'image/gif'];
+        $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
         if (!in_array($file['type'], $allowedTypes)) {
             $this->respondWithError(400, "Invalid file type. Only JPEG, PNG, and GIF are allowed.");
             return false;
@@ -256,7 +265,8 @@ class UserController extends Controller
         return true;
     }
 
-    private function sanitizeFilename($filename) {
+    private function sanitizeFilename($filename)
+    {
         // Remove potentially harmful characters
         $safeFilename = preg_replace("/[^a-zA-Z0-9.]+/", "", basename($filename));
         return $safeFilename;
