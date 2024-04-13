@@ -6,13 +6,13 @@ class User {
     const UserType_Tutor = 'Tutor';
     const UserType_Administrator = 'Administrator';
     
-    public int $userId;
+    public ?int $userId = null;
     public string $firstName;
     public string $lastName;
     public string $password;
     public string $emailAddress;
     public string $userType;
-    public string $profilePhoto;
+    public ?string $profilePhoto;
     public $deleteTutorEntry = false;
 
 }

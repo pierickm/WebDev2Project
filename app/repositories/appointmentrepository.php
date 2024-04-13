@@ -117,6 +117,46 @@ class AppointmentRepository extends Repository
         }
     }
 
+    public function getTotalAppointmentsCount() {
+        try{
+            $stmt = $this->connection->prepare("SELECT COUNT(*) FROM Appointments");
+            $stmt->execute();
+            return $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            throw new PDOException($e->getMessage());
+        }
+    }
+
+    public function getTotalAppointmentsCountForTutor($userId) {
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT COUNT(*) 
+                FROM Appointments 
+                INNER JOIN Tutors ON Appointments.tutorId = Tutors.tutorId
+                WHERE Tutors.userId = :userId
+            ");
+            
+            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            
+            $stmt->execute();
+            
+            return $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            throw new PDOException($e->getMessage());
+        }
+    }
+    
+
+    public function getTotalAppointmentsCountForStudent($userId) {
+        try{
+            $stmt = $this->connection->prepare("SELECT COUNT(*) FROM Appointments WHERE studentId = :studentId");
+            $stmt->bindParam(':studentId', $userId);
+            $stmt->execute();
+            return $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            throw new PDOException($e->getMessage());
+        }
+    }
 
     function create($appointment)
     {

@@ -90,6 +90,16 @@ class UserRepository extends Repository
         }
     }
 
+    public function getTotalUsersCount() {
+        try{
+            $stmt = $this->connection->prepare("SELECT COUNT(*) FROM Users");
+            $stmt->execute();
+            return $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            throw new PDOException($e->getMessage());
+        }
+    }
+
     function checkExistingUser(User $user) {
         try{
             $stmt = $this->connection->prepare("SELECT COUNT(*) FROM Users WHERE emailAddress = :emailAddress");
@@ -137,12 +147,13 @@ class UserRepository extends Repository
 
     function update(User $user) {
         try{
-            $stmt= $this->connection->prepare("UPDATE Users SET emailAddress = :emailAddress, firstName = :firstName, lastName = :lastName, userType = :userType WHERE userId = :userId");
+            $stmt= $this->connection->prepare("UPDATE Users SET emailAddress = :emailAddress, firstName = :firstName, lastName = :lastName, userType = :userType, profilePhoto = :profilePhoto WHERE userId = :userId");
             $stmt->bindParam(':emailAddress', $user->emailAddress);
             $stmt->bindParam(':firstName', $user->firstName);
             $stmt->bindParam(':lastName', $user->lastName);
             $stmt->bindParam(':userType', $user->userType);
             $stmt->bindParam(':userId', $user->userId);
+            $stmt->bindParam(':profilePhoto', $user->profilePhoto);
 
             $stmt->execute();
             return $this->getOne($user->userId);

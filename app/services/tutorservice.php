@@ -43,4 +43,8 @@ class TutorService {
     public function hashPassword($password) {
         return $this->repository->hashPassword($password);
     }
+
+    public function getTotalTutorsCount(){
+        return $this->repository->getTotalTutorsCount();
+    }
 }

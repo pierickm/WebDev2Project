@@ -2,9 +2,11 @@
 
 namespace Controllers;
 
+require __DIR__ .'/../Validation.php';
+
 use Exception;
 use Services\AppointmentService;
-
+use Validation;
 class AppointmentController extends Controller
 {
     private $service;
@@ -17,34 +19,47 @@ class AppointmentController extends Controller
     }
 
     public function getAll()
-    {
-        try{
-            
-            $decodedHeader = $this->verifyToken();
-            if(!$decodedHeader){
-                return;
-            }
-            $userId = $decodedHeader->data->userId;
-
-            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] :20;
-            $offset = isset($_GET['offset']) ? (int)$_GET['offset'] :0;
-
-            if($decodedHeader->data->userType == 'Administrator'){
-                $appointments = $this->service->getAll($offset, $limit);
-                $this->respond($appointments);
-            }
-            if($decodedHeader->data->userType == 'Tutor'){
-                $appointments = $this->service->getAllForTutor($offset, $limit, $userId);
-                $this->respond($appointments);
-            }
-            
-            $appointments = $this->service->getAll($offset, $limit, $userId);
-    
-            return $appointments;
-        } catch (Exception $e) {
-            $this->respondWithError(500, $e->getMessage());
+{
+    try {
+        $decodedHeader = $this->verifyToken();
+        if (!$decodedHeader) {
+            return;
         }
+        
+        $userId = $decodedHeader->data->userId;
+        $userType = $decodedHeader->data->userType;
+
+        $limit = isset($_GET['limit']) ? filter_var($_GET['limit'], FILTER_VALIDATE_INT, ["options" => ["min_range" => 1]]) : 20;
+        $offset = isset($_GET['offset']) ? filter_var($_GET['offset'], FILTER_VALIDATE_INT, ["options" => ["min_range" => 0]]) : 0;
+
+
+        $appointments = [];
+        $total = 0;
+
+        if ($userType == 'Administrator') {
+            $appointments = $this->service->getAll($offset, $limit);
+            $total = $this->service->getTotalAppointmentsCount();
+        } elseif ($userType == 'Tutor') {
+            $appointments = $this->service->getAllForTutor($offset, $limit, $userId);
+            $total = $this->service->getTotalAppointmentsCountForTutor($userId);
+        } else {
+            $appointments = $this->service->getAll($offset, $limit, $userId);
+            $total = $this->service->getTotalAppointmentsCountForStudent($userId);
+        }
+
+        $response = [
+            'data' => $appointments,
+            'total' => $total,
+            'limit' => $limit,
+            'offset' => $offset
+        ];
+
+        $this->respond($response);
+    } catch (Exception $e) {
+        $this->respondWithError(500, $e->getMessage());
     }
+}
+
 
     public function getOne($appointmentId)
     {
@@ -57,6 +72,8 @@ class AppointmentController extends Controller
             $userId = $decodedHeader->data->userId;
             $userRole = $decodedHeader->data->userType;
             
+            $appointmentId = filter_var($userId, FILTER_SANITIZE_STRING);
+
             $appointment = $this->service->getOne($appointmentId);
 
             if (!$appointment) {
@@ -85,6 +102,12 @@ class AppointmentController extends Controller
             }
 
             $appointment = $this->createObjectFromPostedJson("Models\\Appointment");
+            $validator = new Validation((array)$appointment, ['appointmentDate', 'appointmentTime', 'studentId', 'tutorId', 'status']);
+            $errors = $validator->validate();
+            if (!$validator->isValid()) {
+                $this->respondWithError(400, $errors);
+                return;
+            }
             $isAvailable = $this->service->checkAppointmentAvailability($appointment->tutorId, $appointment->appointmentDate, $appointment->appointmentTime);
             
             if (!$isAvailable) {
@@ -108,6 +131,13 @@ class AppointmentController extends Controller
             }
 
             $appointment = $this->createObjectFromPostedJson("Models\\Appointment");
+            $validator = new Validation((array)$appointment, ['appointmentDate', 'appointmentTime', 'studentId', 'tutorId', 'status']);
+            $errors = $validator->validate();
+            if (!$validator->isValid()) {
+                $this->respondWithError(400, $errors);
+                return;
+            }
+            
             $appointment->appointmentId = $appointmentId;
             $appointment = $this->service->update($appointment);
 
@@ -117,26 +147,4 @@ class AppointmentController extends Controller
 
         $this->respond($appointment);
     }
-
-    public function delete($appointmentId)
-    {
-        try {
-            $decodedHeader = $this->verifyToken();
-            if(!$decodedHeader){
-                return;
-            }
-
-            if ($userRole !== 'Administrator') {
-                $this->respondWithError(403, "You do not have permission to delete this permission. You can only cancel it.");
-                return;
-            }
-
-            $this->service->delete($AppointmentId);
-        } catch (Exception $e) {
-            $this->respondWithError(500, $e->getMessage());
-        }
-
-        $this->respond(true);
-    }
-
 }

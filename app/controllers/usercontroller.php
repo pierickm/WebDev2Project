@@ -3,11 +3,14 @@
 namespace Controllers;
 
 require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ .'/../Validation.php';
+
 use Exception;
 use Models\User;
 use Services\UserService;
 use \Firebase\JWT\JWT;
 use \Firebase\JWT\Key;
+use Validation;
 
 class UserController extends Controller
 {
@@ -22,6 +25,13 @@ class UserController extends Controller
 
     public function login() {
         $postedUser = $this->createObjectFromPostedJson("Models\\User");
+
+        $validator = new Validation((array)$postedUser, [], ['emailAddress']);
+        $errors = $validator->validate();
+        if (!$validator->isValid()) {
+            $this->respondWithError(400, $errors);
+            return;
+        }
         $user = $this->service->CheckLogin($postedUser->password, $postedUser->emailAddress);
         
         if(!$user) {
@@ -40,6 +50,14 @@ class UserController extends Controller
     public function register() {
         try{
             $postedUser = $this->createObjectFromPostedJson("Models\\User");
+            // Validation
+            $validator = new Validation((array)$postedUser, ['emailAddress', 'password', 'firstName', 'lastName'], ['emailAddress']);
+            $errors = $validator->validate();
+            if (!$validator->isValid()) {
+                $this->respondWithError(400, $errors);
+                return;
+            }
+
             $postedUser->password = $this->service->hashPassword($postedUser->password);
             $user = $this->service->register($postedUser);
         } catch(Exception $e) {
@@ -54,6 +72,12 @@ class UserController extends Controller
     public function create() {
         try{
             $postedUser = $this->createObjectFromPostedJson("Models\\User");
+            $validator = new Validation((array)$postedUser, ['emailAddress', 'password', 'firstName', 'lastName', 'userType'], ['emailAddress']);
+            $errors = $validator->validate();
+            if (!$validator->isValid()) {
+                $this->respondWithError(400, $errors);
+                return;
+            }
             $postedUser->password = $this->service->hashPassword($postedUser->password);
             $user = $this->service->create($postedUser);
         } catch(Exception $e) {
@@ -68,13 +92,19 @@ class UserController extends Controller
         $decodedJwt = $this->verifyToken();
         try {
             $user = $this->createObjectFromPostedJson("Models\\User");
+            $validator = new Validation((array)$user, ['firstName', 'lastName', 'emailAddress', 'userType'], ['emailAddress']);
+            $errors = $validator->validate();
+            if (!$validator->isValid()) {
+                $this->respondWithError(400, $errors);
+                return;
+            }
             if(!$decodedJwt->data->userType == "Administrator" && !$decodedJwt->data->userId == $userId) {
                 $this->respondWithError(403, "Forbidden - Since you are not an Administrator, you can only update your account.");
                 return;
             }
             $user->userId = $userId;
             $updatedUser = $this->service->update($user);
-            if($updatedUser && $user->deleteTutorEntry) {
+            if($updatedUser &&  isset($user->deleteTutorEntry) && $user->deleteTutorEntry) {
                 $this->service->deleteTutorEntry($user->userId);
             }
             $this->respond($updatedUser);
@@ -95,11 +125,20 @@ class UserController extends Controller
                 return;
             }
 
-            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] :20;
-            $offset = isset($_GET['offset']) ? (int)$_GET['offset'] :0;
+            $limit = isset($_GET['limit']) ? filter_var($_GET['limit'], FILTER_VALIDATE_INT, ["options" => ["min_range" => 1]]) : 20;
+            $offset = isset($_GET['offset']) ? filter_var($_GET['offset'], FILTER_VALIDATE_INT, ["options" => ["min_range" => 0]]) : 0;
 
             $users = $this->service->getAll($limit, $offset);
-            $this->respond($users);
+            $total = $this->service->getTotalUsersCount();
+
+            $response = [
+                'data' => $users,
+                'total' => $total,
+                'limit' => $limit,
+                'offset' => $offset
+            ];
+
+            $this->respond($response);
         } catch (Exception $e) {
             $this->respondWithError(500, $e->getMessage());
         }
@@ -111,6 +150,8 @@ class UserController extends Controller
             $this->respondWithError(403, "Forbidden - Since you are not an Administrator, you can only view your own account.");
             return;
         }
+
+        $userId = filter_var($userId, FILTER_SANITIZE_NUMBER_INT);
 
         try {
             $user = $this->service->getOne($userId);
@@ -131,6 +172,8 @@ class UserController extends Controller
             $this->respondWithError(403, "Forbidden - Only administrators can delete accounts.");
             return;
         }
+
+        $userId = filter_var($userId, FILTER_SANITIZE_NUMBER_INT);
 
         try{
             $result = $this->service->delete($userId);
@@ -177,13 +220,15 @@ class UserController extends Controller
     
         if (isset($_FILES['profilePhoto'])) {
             $file = $_FILES['profilePhoto'];
+            if (!$this->validateFile($file)) {
+                return;
+            }
             $directory = __DIR__ . '/../public/uploads/';
-            $targetFile = $directory . basename($file['name']);
-            
-            // You may want to add file validation here (e.g., check file type, size)
-    
+            $filename = $this->sanitizeFilename($file['name']);
+            $targetFile = $directory . $filename;
+                
             if (move_uploaded_file($file['tmp_name'], $targetFile)) {
-                $filePath = '/uploads/' . basename($file['name']);
+                $filePath = '/uploads/' . $filename;
     
                 $this->respond(['success' => true, 'filePath' => $filePath]);
             } else {
@@ -192,5 +237,28 @@ class UserController extends Controller
         } else {
             $this->respondWithError(400, "No file was uploaded.");
         }
+    }
+    private function validateFile($file) {
+        // Validate file size
+        $maxFileSize = 5 * 1024 * 1024; // 5 MB in bytes
+        if ($file['size'] > $maxFileSize) {
+            $this->respondWithError(400, "File size exceeds the maximum limit of 5MB.");
+            return false;
+        }
+
+        // Validate file type
+        $allowedTypes = ['image/jpeg','image/jpg', 'image/png', 'image/gif'];
+        if (!in_array($file['type'], $allowedTypes)) {
+            $this->respondWithError(400, "Invalid file type. Only JPEG, PNG, and GIF are allowed.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private function sanitizeFilename($filename) {
+        // Remove potentially harmful characters
+        $safeFilename = preg_replace("/[^a-zA-Z0-9.]+/", "", basename($filename));
+        return $safeFilename;
     }
 }

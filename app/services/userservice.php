@@ -47,4 +47,8 @@ class UserService {
     public function deleteTutorEntry($userId) {
         return $this->repository->deleteTutorEntry($userId);
     }
+
+    public function getTotalUsersCount(){
+        return $this->repository->getTotalUsersCount();
+    }
 }

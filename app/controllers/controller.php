@@ -65,10 +65,12 @@ class Controller
     function createObjectFromPostedJson($className)
     {
         $json = file_get_contents('php://input');
-        $data = json_decode($json);
+        $rawData = json_decode($json, true);
+
+        $sanitizedData = $this->sanitizeInputData($rawData);
 
         $object = new $className();
-        foreach ($data as $key => $value) {
+        foreach ($sanitizedData as $key => $value) {
             if(is_object($value)) {
                 continue;
             }
@@ -76,4 +78,41 @@ class Controller
         }
         return $object;
     }
+
+    function sanitizeInputData($data){
+        $sanitizedData = [];
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                $sanitizedData[$key] = $this->sanitizeInputData($value);
+            } else {
+                if ($value === null) {
+                    $sanitizedData[$key] = null;
+                } else {
+                    switch ($key) {
+                        case 'emailAddress':
+                            $sanitizedData[$key] = filter_var($value, FILTER_SANITIZE_EMAIL);
+                            break;
+                        case 'userId':
+                        case 'tutorId':
+                        case 'appointmentId':
+                            $sanitizedData[$key] = filter_var($value, FILTER_SANITIZE_NUMBER_INT);
+                            break;
+                        case 'comment':
+                        case 'firstName':
+                        case 'lastName':
+                        case 'description':
+                            $sanitizedData[$key] = strip_tags($value);
+                            break;
+                        case 'profilePhoto':
+                            $sanitizedData[$key] = filter_var($value); //already gets sanitized in imageUpload method
+                        default:
+                            $sanitizedData[$key] = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+                            break;
+                    }
+                }
+            }
+        }
+        return $sanitizedData;
+    }
+    
 }

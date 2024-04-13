@@ -43,6 +43,18 @@ class AppointmentService {
     public function checkAppointmentAvailability($tutorId, $appointmentDate, $appointmentTime){
         return $this->repository->checkAppointmentAvailability($tutorId, $appointmentDate, $appointmentTime);
     }
+
+    public function getTotalAppointmentsCount() {
+        return $this->repository->getTotalAppointmentsCount();
+    }
+    
+    public function getTotalAppointmentsCountForTutor($userId){
+        return $this->repository->getTotalAppointmentsCountForTutor($userId);
+    }
+
+    public function getTotalAppointmentsCountForStudent($userId){
+        return $this->repository->getTotalAppointmentsCountForStudent($userId);
+    }
 }
 
 ?>
